@@ -1,0 +1,153 @@
+{
+  "dataset": {
+    "kind": "synthetic_sample",
+    "disclaimer": "The development dataset is synthetic/sample data and is not a substitute for a validated field dataset.",
+    "n_raw_rows": 1616,
+    "n_train": 1278,
+    "n_test": 324,
+    "class_counts": {
+      "MEDIUM": 650,
+      "LOW": 612,
+      "HIGH": 354
+    },
+    "features": [
+      "slope_angle_deg",
+      "slope_height_m",
+      "ucs_mpa",
+      "discontinuity_spacing_m",
+      "discontinuity_orientation_index",
+      "weathering_grade",
+      "rainfall_mm",
+      "groundwater_index",
+      "vegetation_cover",
+      "seismic_pga_g"
+    ],
+    "engineered_features": [
+      "slope_energy_proxy",
+      "hydro_loading_proxy",
+      "kinematic_weakness_proxy"
+    ]
+  },
+  "selected_model": "logistic_regression",
+  "selection_metric": "f1_macro",
+  "selection_reason": "Selected logistic_regression because it achieved the highest macro-F1 on the held-out stratified test split among the trained candidates.",
+  "test_metrics": {
+    "accuracy": 0.8734567901234568,
+    "precision_macro": 0.867743845505682,
+    "recall_macro": 0.8844518434350107,
+    "f1_macro": 0.8742841888621941,
+    "roc_auc_ovr_macro": null,
+    "confusion_matrix_labels": [
+      "LOW",
+      "MEDIUM",
+      "HIGH"
+    ],
+    "confusion_matrix": [
+      [
+        110,
+        13,
+        0
+      ],
+      [
+        9,
+        106,
+        15
+      ],
+      [
+        0,
+        4,
+        67
+      ]
+    ],
+    "classification_report": {
+      "LOW": {
+        "precision": 0.9243697478991597,
+        "recall": 0.8943089430894309,
+        "f1-score": 0.9090909090909091,
+        "support": 123.0
+      },
+      "MEDIUM": {
+        "precision": 0.8617886178861789,
+        "recall": 0.8153846153846154,
+        "f1-score": 0.8379446640316206,
+        "support": 130.0
+      },
+      "HIGH": {
+        "precision": 0.8170731707317073,
+        "recall": 0.9436619718309859,
+        "f1-score": 0.8758169934640523,
+        "support": 71.0
+      },
+      "accuracy": 0.8734567901234568,
+      "macro avg": {
+        "precision": 0.867743845505682,
+        "recall": 0.8844518434350107,
+        "f1-score": 0.8742841888621941,
+        "support": 324.0
+      },
+      "weighted avg": {
+        "precision": 0.875747513699849,
+        "recall": 0.8734567901234568,
+        "f1-score": 0.8732530699945685,
+        "support": 324.0
+      }
+    }
+  },
+  "candidate_metrics": [
+    {
+      "model": "logistic_regression",
+      "accuracy": 0.8734567901234568,
+      "precision_macro": 0.867743845505682,
+      "recall_macro": 0.8844518434350107,
+      "f1_macro": 0.8742841888621941,
+      "roc_auc_ovr_macro": null
+    },
+    {
+      "model": "random_forest",
+      "accuracy": 0.845679012345679,
+      "precision_macro": 0.8409666572441866,
+      "recall_macro": 0.8568216050524535,
+      "f1_macro": 0.8473654537071275,
+      "roc_auc_ovr_macro": null
+    },
+    {
+      "model": "gradient_boosting",
+      "accuracy": 0.8209876543209876,
+      "precision_macro": 0.8167547907591898,
+      "recall_macro": 0.8211018036507559,
+      "f1_macro": 0.8185992643800118,
+      "roc_auc_ovr_macro": null
+    },
+    {
+      "model": "decision_tree",
+      "accuracy": 0.7808641975308642,
+      "precision_macro": 0.775270270641534,
+      "recall_macro": 0.7958536291755117,
+      "f1_macro": 0.7827462428966188,
+      "roc_auc_ovr_macro": null
+    }
+  ],
+  "feature_importance": {
+    "slope_angle_deg": 1.3970674215299568,
+    "slope_height_m": 0.11060141635068173,
+    "ucs_mpa": 0.45498338826407636,
+    "discontinuity_spacing_m": 0.0981005238064323,
+    "discontinuity_orientation_index": 0.47021973531932887,
+    "weathering_grade": 0.6470221925493754,
+    "rainfall_mm": 0.21177332432989326,
+    "groundwater_index": 0.07995724794996263,
+    "vegetation_cover": 0.29401898623207906,
+    "seismic_pga_g": 0.3314414838945524,
+    "slope_energy_proxy": 2.700416494815777,
+    "hydro_loading_proxy": 0.6046413443652136,
+    "kinematic_weakness_proxy": 0.14948255814912195
+  },
+  "model_path": "ml/models/rockfall_pipeline.joblib",
+  "plots": [
+    "ml/evaluation/plots/confusion_matrix.png",
+    "ml/evaluation/plots/risk_distribution.png",
+    "ml/evaluation/plots/model_comparison.png",
+    "ml/evaluation/plots/feature_distributions.png",
+    "ml/evaluation/plots/feature_importance.png"
+  ]
+}

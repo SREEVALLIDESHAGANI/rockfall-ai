@@ -1,0 +1,5 @@
+SYNTHETIC / SAMPLE DEVELOPMENT DATASET
+
+The development dataset is synthetic/sample data and is not a substitute for a validated field dataset.
+Labels were assigned by a reproducible scoring function plus noise.
+They are not observed rockfall inventories.
