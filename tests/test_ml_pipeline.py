@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 
 import pandas as pd
@@ -61,7 +62,7 @@ def test_model_serialization_and_prediction(trained):
 def test_training_writes_metrics(trained):
     metrics = Path("ml/evaluation/metrics.json")
     assert metrics.exists()
-    payload = pd.read_json(metrics)
-    assert "selected_model" in payload.columns or True
+    payload = json.loads(metrics.read_text(encoding="utf-8"))
+    assert "selected_model" in payload
     text = metrics.read_text(encoding="utf-8")
     assert "synthetic" in text.lower()

@@ -48,7 +48,10 @@ app.add_middleware(
 @app.exception_handler(Exception)
 async def unhandled_exception_handler(request: Request, exc: Exception):
     logger.exception("Unhandled error on %s: %s", request.url.path, exc)
-    return JSONResponse(status_code=500, content={"detail": "An unexpected server error occurred."})
+    return JSONResponse(
+        status_code=500,
+        content={"detail": f"Server Error ({type(exc).__name__}): {str(exc)}"},
+    )
 
 
 # Include API Routes

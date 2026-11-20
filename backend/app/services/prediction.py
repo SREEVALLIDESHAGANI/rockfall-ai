@@ -8,7 +8,10 @@ from typing import Any
 import joblib
 import pandas as pd
 
+import sys
 from backend.app.config import PROJECT_ROOT, get_settings
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
 from backend.app.schemas.prediction import PredictRequest
 from ml.preprocessing.clean import add_engineered_features
 from ml.src.generate_dataset import FEATURE_COLUMNS
