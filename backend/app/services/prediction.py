@@ -2,13 +2,14 @@ from __future__ import annotations
 
 import json
 import logging
+import sys
 from pathlib import Path
 from typing import Any
 
 import joblib
+import numpy as np
 import pandas as pd
 
-import sys
 from backend.app.config import PROJECT_ROOT, get_settings
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
@@ -58,6 +59,30 @@ class ModelNotAvailableError(RuntimeError):
     pass
 
 
+def _patch_pipeline(pipeline: Any) -> None:
+    """Ensure cross-version scikit-learn compatibility for unpickled estimators."""
+    try:
+        def patch_step(obj: Any) -> None:
+            if "SimpleImputer" in type(obj).__name__:
+                default_dtype = getattr(obj, "statistics_", np.array([0.0])).dtype
+                if not hasattr(obj, "_fill_dtype"):
+                    setattr(obj, "_fill_dtype", getattr(obj, "_fit_dtype", default_dtype))
+                if not hasattr(obj, "_fit_dtype"):
+                    setattr(obj, "_fit_dtype", getattr(obj, "_fill_dtype", default_dtype))
+
+        if hasattr(pipeline, "named_steps"):
+            for step in pipeline.named_steps.values():
+                patch_step(step)
+                if hasattr(step, "transformers_"):
+                    for _, transformer, _ in step.transformers_:
+                        patch_step(transformer)
+                        if hasattr(transformer, "named_steps"):
+                            for sub in transformer.named_steps.values():
+                                patch_step(sub)
+    except Exception as e:
+        logger.warning("Pipeline patch notice: %s", e)
+
+
 class PredictionService:
     def __init__(self) -> None:
         self.artifact: dict[str, Any] | None = None
@@ -67,15 +92,39 @@ class PredictionService:
     def _load(self) -> None:
         settings = get_settings()
         path = settings.resolved_model_path
-        if not path.exists():
-            logger.error("Model file missing at %s", path)
-            self.artifact = None
-            return
-        self.artifact = joblib.load(path)
         metrics_path = PROJECT_ROOT / "ml" / "evaluation" / "metrics.json"
+
+        loaded_ok = False
+        if path.exists():
+            try:
+                self.artifact = joblib.load(path)
+                _patch_pipeline(self.artifact.get("pipeline"))
+                # Smoke-test prediction with zero-vector to guarantee runtime compatibility
+                if "feature_names" in self.artifact and "pipeline" in self.artifact:
+                    dummy = pd.DataFrame([{col: 0.0 for col in self.artifact["feature_names"]}])
+                    self.artifact["pipeline"].predict(dummy)
+                loaded_ok = True
+                logger.info("Loaded model %s from %s", self.artifact.get("model_name"), path)
+            except Exception as exc:
+                logger.warning("Pre-built model incompatible with runtime scikit-learn (%s). Retraining natively...", exc)
+
+        if not loaded_ok:
+            logger.info("Training fresh native model in runtime environment...")
+            try:
+                from ml.training.train import train_and_export
+                self.artifact = train_and_export()
+                _patch_pipeline(self.artifact.get("pipeline"))
+                logger.info("Native model trained and initialized successfully: %s", self.artifact.get("model_name"))
+            except Exception as train_exc:
+                logger.error("Failed to train native model: %s", train_exc)
+                if not self.artifact:
+                    return
+
         if metrics_path.exists():
-            self.metrics = json.loads(metrics_path.read_text(encoding="utf-8"))
-        logger.info("Loaded model %s from %s", self.artifact.get("model_name"), path)
+            try:
+                self.metrics = json.loads(metrics_path.read_text(encoding="utf-8"))
+            except Exception:
+                self.metrics = None
 
     @property
     def loaded(self) -> bool:
@@ -107,8 +156,13 @@ class PredictionService:
         frame = add_engineered_features(pd.DataFrame([features]))
         feature_names = artifact["feature_names"]
         pipeline = artifact["pipeline"]
-        risk_level = str(pipeline.predict(frame[feature_names])[0])
-        proba = pipeline.predict_proba(frame[feature_names])[0]
+        try:
+            risk_level = str(pipeline.predict(frame[feature_names])[0])
+            proba = pipeline.predict_proba(frame[feature_names])[0]
+        except (AttributeError, ValueError):
+            _patch_pipeline(pipeline)
+            risk_level = str(pipeline.predict(frame[feature_names])[0])
+            proba = pipeline.predict_proba(frame[feature_names])[0]
         labels = [str(x) for x in pipeline.classes_]
         probabilities = {label: float(p) for label, p in zip(labels, proba)}
         contributors = self._contributors(frame, artifact)
